@@ -1,3 +1,5 @@
+https://gerry-bima-footballshop.pbp.cs.ui.ac.id/
+
 - Membuat sebuah proyek Django baru: untuk membuat project django baru pertama saya membuat environment untuk mengisolasi depedencies yang akan saya install. Lalu saya membuat requirement.txt yang berisi depedencies yang diperlukan project django saya. Setelah itu menjalankan "pip install -r requirements.txt", dilanjut dengan konfigurasi .env dan env.prod untuk mengakses database. Dan diakhiri dengan menghubungkan ke repository github.
 
 - Membuat aplikasi dengan nama main pada proyek tersebut: untuk membuat directory baru bernama "main" dapat dengan command "python manage.py startapp main" dan didaftarkan ke INSTALLED_APPS di settings.py, directory ini digunakan untuk struktur project.
