@@ -1,5 +1,7 @@
 https://gerry-bima-footballshop.pbp.cs.ui.ac.id/
 
+#Tugas2
+
 - Membuat sebuah proyek Django baru: untuk membuat project django baru pertama saya membuat environment untuk mengisolasi depedencies yang akan saya install. Lalu saya membuat requirement.txt yang berisi depedencies yang diperlukan project django saya. Setelah itu menjalankan "pip install -r requirements.txt", dilanjut dengan konfigurasi .env dan env.prod untuk mengakses database. Dan diakhiri dengan menghubungkan ke repository github.
 
 - Membuat aplikasi dengan nama main pada proyek tersebut: untuk membuat directory baru bernama "main" dapat dengan command "python manage.py startapp main" dan didaftarkan ke INSTALLED_APPS di settings.py, directory ini digunakan untuk struktur project.
@@ -34,3 +36,52 @@ Menurut Anda, dari semua framework yang ada, mengapa framework Django dijadikan 
 4. ORM, dengan ORM untuk menghubungkan database, proses penggunaan database menjadi mudah.
 
 Apakah ada feedback untuk asisten dosen tutorial 1 yang telah kamu kerjakan sebelumnya? Tutorial sudah sangat lengkap dan diisi dengan bahasa yang mudah dipahami, jadi overall sudah bagus.
+
+#Tugas3
+
+Jelaskan mengapa kita memerlukan data delivery dalam pengimplementasian sebuah platform?
+Dalam sebuah platform data sangatlah penting untuk memastikan semua variable terisi dan bisa diperlihatkan. Untuk itu proses data delivery diperlukan agar data bisa sampai tujuan dengan aman, akurat, dan tidak terubah. Dalam projek django, ORM berperan besar karena mengubah objek python menjadi data yang dipahami database, dan sebaliknya.
+
+Menurutmu, mana yang lebih baik antara XML dan JSON? Mengapa JSON lebih populer dibandingkan XML?
+menurutku JSON lebih baik, JSON adalah singkatan dari JavaScript Object Notation dan saya lebih terbiasa membaca object javascript daripada xml. Alasan mengapa JSON lebih populer dari XML adalah karena beberapa faktor, diantaranya: 
+- Sintaks yang Ringkas dan Mudah Dibaca: Sintaks JSON menggunakan pasangan "key-value" yang sederhana dan mudah dibaca, mirip dengan objek JavaScript. Sebaliknya, XML menggunakan tag pembuka dan penutup yang membuatnya lebih bertele-tele (verbose) dan kurang ringkas. 
+- Integrasi yang Lebih Baik dengan JavaScript: Karena JSON adalah singkatan dari "JavaScript Object Notation," ia secara alami cocok dengan JavaScript. Pengembang dapat langsung mengonversi string JSON menjadi objek JavaScript tanpa perlu parser yang rumit, yang membuat proses pengembangan jauh lebih cepat.
+- Parsing yang Lebih Cepat: Karena sintaksnya yang lebih sederhana dan ukuran file yang lebih kecil, JSON dapat di-parsing lebih cepat. Dalam aplikasi yang sangat bergantung pada pertukaran data real-time, seperti API, kecepatan ini adalah keuntungan besar.
+- Ideal untuk API: Sebagian besar API modern (RESTful API) menggunakan JSON sebagai format pertukaran data utama. Format ini sangat efisien untuk mengirimkan data terstruktur antara server dan klien (misalnya, browser web atau aplikasi seluler) dengan overhead minimal.
+
+Jelaskan fungsi dari method is_valid() pada form Django dan mengapa kita membutuhkan method tersebut?
+method is_valid disini digunakan dalam views.py di kode 'if form.is_valid() and request.method == "POST":' form adalah object dari class ProductForm di forms.py. form.is_valid() diperlukan untuk mengecek apakah semua kolom data sudah diisi dengan benar oleh user (tidak dikosongkan dan sesuai tipe data), jika sudah benar akan mereturn true jika tidak false.
+
+Mengapa kita membutuhkan csrf_token saat membuat form di Django? Apa yang dapat terjadi jika kita tidak menambahkan csrf_token pada form Django? Bagaimana hal tersebut dapat dimanfaatkan oleh penyerang?
+csrf_token disini digunakan untuk memastikan bahwa submit form berasal dari request user di create_product.html dengan melakukan validasi apakah token sudah sama dengan token yang di generate otomatis oleh django. Jika tidak ada csrf_token django tidak bisa memverifikasi apakah submit form benar-benar dari user, yang bisa dimanfaatkan oleh penyerang untuk memasukkan sembarang data ke database kita.
+
+Penjelasan checklist step by step:
+
+- Tambahkan 4 fungsi views baru untuk melihat objek yang sudah ditambahkan dalam format XML, JSON, XML by ID, dan JSON by ID: Menambahkan fungsi show_xml dengan parameter request yang berisi product_list yaitu data dari semua produk lalu diubah kedalam time xml. Menambahkan fungsi show_json dengan parameter request yang sama dengan show_xml tetapi product_list diganti ke json. Menambahkan show_xml_by_id dengan parameter request dan product_id yang berisi percobaan mengambil data produk berdasarkan product_id dengan .filter(), jika ada di ubah kedalam bentuk xml seperti sebelumnya. Menambahkan fungsi show_json_by_id yang mirip seperti show_xml_by_id namun data diubah ke bentuk json.
+
+- Membuat routing URL untuk masing-masing views yang telah ditambahkan pada poin 1: untuk membuat routing kira perlu menambahkan kode di urls.py. pertama-tama import keempat fungsi yang sudah dibuat, lalu gunakan path() yang diimport dari django.urls untuk menentukan path dari fungsi tersebut.
+
+- Membuat halaman yang menampilkan data objek model yang memiliki tombol "Add" yang akan redirect ke halaman form, serta tombol "Detail" pada setiap data objek model yang akan menampilkan halaman detail objek: disini saya menambahkan beberapa baris kode ke main.html dengan block code, diantaranya: logika 'if not product_list' yang isisnya ditampilkan jika product_list kosong, lalu 'for product in product_list' untuk interasi object product di product_list dan menampilkan variable dari objectnya satu persatu. untuk tombol "Add" saya menambahkan <a> yang terhubung ke create_product dan terisi dengan <button>.
+
+Membuat halaman form untuk menambahkan objek model pada app sebelumnya: agar halaman form nanti bisa mempunyai fungsi untuk mengisi object Product, perlu membuat fungsi baru di views yaitu create_product(request) fungsi ini menggunakan class ProductForm(modelForm) yang saya buat di forms.py, class ini digunakan untuk struktur data yang akan di sumbit. Dengan menggunakan validasi is_valid() data bisa tersubmit dengan benar. Yang penting juga menambahkan csrf_token agar django bisa memverifikasi bahwa request submit dari user.
+
+Membuat halaman yang menampilkan detail dari setiap data objek model: agar halaman bisa menampilkan produk yang diinginkan, saya memverifikasinya dengan id dengan fungsi show_product yang menerima parameter id, lalu menggunakan get_object_or404() yang diimport dari django.shortcuts dan mempassing dengan render() ke halaman untuk detail produk. Untuk halaman detail produk saya membuat product_detail.html karena sudah menerima object produk hanya tinggal membuat struktur html untuk menampilkan variable product.
+
+Screenshot postman:
+
+![alt text](image.png)
+https://gerry-bima-footballshop.pbp.cs.ui.ac.id/json
+
+![alt text](image-1.png)
+https://gerry-bima-footballshop.pbp.cs.ui.ac.id/json/e9727c8b-b4f6-4f6a-9c77-6c66161bd3e8
+
+![alt text](image-2.png)
+https://gerry-bima-footballshop.pbp.cs.ui.ac.id/xml
+
+![alt text](image-3.png)
+https://gerry-bima-footballshop.pbp.cs.ui.ac.id/xml/e9727c8b-b4f6-4f6a-9c77-6c66161bd3e8
+
+Untuk feedback tutorial 2 overall lancar dan aman.
+
+
+
