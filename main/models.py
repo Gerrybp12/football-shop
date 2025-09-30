@@ -12,4 +12,7 @@ class Product(models.Model):
     thumbnail = models.URLField()
     category = models.CharField()
     is_featured = models.BooleanField()
+
+    def format_rupiah(self):
+        return "Rp{:,.0f}".format(self.price).replace(",", ".")
     
