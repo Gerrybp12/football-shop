@@ -38,7 +38,7 @@
         </div>
       {% endif %}
 
-      <form method="POST" action="" class="space-y-6">
+      <form method="POST" class="space-y-6">
         {% csrf_token %}
         
         <div>
@@ -102,4 +102,72 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.querySelector("form");
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch(form.action, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status === "success") {
+        console.log("Redirecting to:", data.redirect_url);
+        window.location.href = data.redirect_url;
+      } else if (data.status === "error") {
+        const errorContainer = document.createElement("div");
+        errorContainer.className =
+          "mt-4 px-4 py-3 rounded-md text-sm bg-red-50 border border-red-200 text-red-700";
+
+        errorContainer.innerHTML = `
+          <strong>Login gagal!</strong><br>
+          ${Object.entries(data.errors)
+            .map(([field, msgs]) =>
+              msgs.map(msg => `${field}: ${msg.message}`).join("<br>")
+            )
+            .join("<br>")}
+        `;
+
+        const oldError = document.querySelector("#ajax-errors");
+        if (oldError) oldError.remove();
+
+        errorContainer.id = "ajax-errors";
+        form.insertAdjacentElement("beforebegin", errorContainer);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      showToast("Error", "Terjadi kesalahan saat mengirim data.", "error");
+    }
+  });
+});
+document.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("register") === "success") {
+    showToast("Account registered successfully!", "", "success");
+  }
+  if (params.get("logout") === "success") {
+    showToast("Logout success!", "", "success");
+  }
+
+  const newUrl = window.location.pathname + window.location.hash;
+  window.history.replaceState({}, document.title, newUrl);
+});
+</script>
 {% endblock content %}

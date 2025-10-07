@@ -14,18 +14,6 @@
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-2">Football Product</h1>
       <p class="text-gray-600">Description</p>
-    </div>
-
-    <!-- Filter Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 bg-white rounded-lg border border-gray-200 p-4">
-      <div class="flex space-x-3 mb-4 sm:mb-0">
-        <a href="?" class="{% if request.GET.filter == 'all' or not request.GET.filter  %} bg-[#590202] text-white{% else %}bg-white text-gray-700 border border-gray-300{% endif %} px-4 py-2 rounded-md font-medium transition-colors hover:bg-[#8D0A0A] hover:text-white">
-          All Product
-        </a>
-        <a href="?filter=my" class="{% if request.GET.filter == 'my' %} bg-[#590202] text-white{% else %}bg-white text-gray-700 border border-gray-300{% endif %} px-4 py-2 rounded-md font-medium transition-colors hover:bg-[#8D0A0A] hover:text-white">
-          My Product
-        </a>
-      </div>
       {% if user.is_authenticated %}
         <div class="text-sm text-gray-500">
           Last login: {{ last_login }}
@@ -33,25 +21,315 @@
       {% endif %}
     </div>
 
-    <!-- Product Grid -->
-    {% if not product_list %}
-      <div class="bg-white rounded-lg border border-gray-200 p-12 text-center">
-        <!-- <div class="w-32 h-32 mx-auto mb-4">
-          <img src="{% static 'image/no-product.png' %}" alt="No product available" class="w-full h-full object-contain">
-        </div> -->
-        <h3 class="text-lg font-medium text-gray-900 mb-2">No product found</h3>
-        <p class="text-gray-500 mb-6">create your product below</p>
-        <a href="{% url 'main:create_product' %}" class="inline-flex items-center px-4 py-2 bg-[#590202] text-white rounded-md hover:bg-[#8D0A0A] transition-colors">
-          Create Product
+    <button onclick="showModal()" class="inline-flex items-center px-4 py-2 bg-white text-[#590202] font-semibold outline outline-2 outline-[#590202] outline-offset-[-2px] rounded-md hover:bg-[#590202] hover:text-white transition-colors mb-4">
+      Create Product by AJAX
+    </button>
+
+    <!-- Filter Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 bg-white rounded-lg border border-gray-200 p-4">
+      <div class="flex space-x-3 mb-4 sm:mb-0">
+        <a id="filter-all" class="{% if request.GET.filter == 'all' or not request.GET.filter  %} bg-[#590202] text-white{% else %}bg-white text-gray-700 border border-gray-300{% endif %} px-4 py-2 rounded-md font-medium transition-colors hover:bg-[#8D0A0A] hover:text-white">
+          All Product
+        </a>
+        <a id="filter-my" class="{% if request.GET.filter == 'my' %} bg-[#590202] text-white{% else %}bg-white text-gray-700 border border-gray-300{% endif %} px-4 py-2 rounded-md font-medium transition-colors hover:bg-[#8D0A0A] hover:text-white">
+          My Product
         </a>
       </div>
-    {% else %}
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-        {% for product in product_list %}
-          {% include 'card_product.html' with product=product %}
-        {% endfor %}
+      <button onclick="refreshProducts()" class="inline-flex items-center px-4 py-2 bg-[#590202] text-white font-semibold rounded-md hover:bg-[#8D0A0A] transition-colors">
+        Refresh Products
+      </button>
+    </div>
+
+    <div id="loading" class="bg-white rounded-lg border border-gray-200 p-12 text-center hidden">
+      <svg class="animate-spin h-8 w-8 text-[#590202] inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+      </svg>
+      <p class="text-gray-600 mt-3">Loading product...</p>
       </div>
-    {% endif %}
+
+    <!-- Error State -->
+    <div id="error" class="hidden"></div>
+
+    <!-- Product Grid -->
+    <div id="grid" class="hidden"></div>
+
+    <div id="empty" class="bg-white rounded-lg border border-gray-200 p-12 text-center hidden">
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No product found</h3>
+      <p class="text-gray-500 mb-6">create your product below</p>
+      <a href="{% url 'main:create_product' %}" class="inline-flex items-center px-4 py-2 bg-[#590202] text-white rounded-md hover:bg-[#8D0A0A] transition-colors">
+        Create Product
+      </a>
+    </div>
+  </div>
+
+  <div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+  <div class="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">Are you sure?</h2>
+    <p class="text-gray-600 mb-6">This action will permanently delete this product.</p>
+    <div class="flex justify-end space-x-3">
+      <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">Cancel</button>
+      <button id="confirmDeleteBtn" onclick="handleDeleteProduct()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+  Delete
+</button>
+    </div>
   </div>
 </div>
+</div>
+
+<script>
+
+let deleteTargetLink = null;
+
+function openDeleteModal(link) {
+  deleteTargetLink = link;
+  document.getElementById("deleteModal").classList.remove("hidden");
+}
+
+function closeDeleteModal() {
+  deleteTargetLink = null;
+  document.getElementById("deleteModal").classList.add("hidden");
+}
+async function handleDeleteProduct() {
+  if (!deleteTargetLink) return;
+
+  try {
+    const response = await fetch(deleteTargetLink, {
+      method: "POST",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "X-CSRFToken": getCSRFToken(),
+      },
+    });
+
+    if (!response.ok) throw new Error("Failed to delete product");
+
+    showToast('Product deleted successfully!', '', 'success');
+    closeDeleteModal();
+    fetchProductFromServer();
+
+  } catch (error) {
+    console.error("Delete failed:", error);
+    showToast('Error occured when deleting product!', '', 'error');
+  }
+}
+
+function getCSRFToken() {
+  const cookieValue = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("csrftoken="));
+  return cookieValue ? cookieValue.split("=")[1] : "";
+}
+
+  // Configuration
+const PRODUCT_API_ENDPOINT = "{% url 'main:show_json' %}";
+const CURRENT_USER_ID = "{{ user.id|default_if_none:'' }}";
+
+const loadingSpinner = document.getElementById('loading');
+const errorMessage = document.getElementById('error');
+const emptyStateDisplay = document.getElementById('empty');
+const productGridContainer = document.getElementById('grid');
+const showAllProductButton = document.getElementById('filter-all');
+const showMyProductButton = document.getElementById('filter-my');
+
+// State Variables
+let activeFilter = 'all';
+let allProductData = [];
+
+// Update filter button appearance
+function updateFilterButtonsAppearance() {
+  if (!showAllProductButton || !showMyProductButton) return;
+  
+  if (activeFilter === 'all') {
+    showAllProductButton.className = 'bg-[#590202] text-white px-4 py-2 rounded-md font-medium transition-colors hover:bg-[#8D0A0A]';
+    showMyProductButton.className = 'bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium transition-colors hover:bg-[#590202] hover:text-white';
+  } else {
+    showMyProductButton.className = 'bg-[#590202] text-white px-4 py-2 rounded-md font-medium transition-colors hover:bg-[#8D0A0A]';
+    showAllProductButton.className = 'bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium transition-colors hover:bg-[#590202] hover:text-white';
+  }
+}
+
+// Show/hide page sections
+function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
+  loadingSpinner.classList.toggle('hidden', !showLoading);
+  errorMessage.classList.toggle('hidden', !showError);
+  emptyStateDisplay.classList.toggle('hidden', !showEmpty);
+  productGridContainer.classList.toggle('hidden', !showGrid);
+  
+  // Add grid classes when showing grid
+  if (showGrid) {
+    productGridContainer.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6';
+  }
+}
+
+// Get readable category name
+function getReadableCategoryName(categoryCode) {
+  const categoryMapping = {
+    sepatu: 'Sepatu',
+    deker: 'Deker',
+    bola: 'Bola',
+    jersey: 'Jersey',
+    glove: 'Glove',
+    kaosKaki: 'KaosKaki',
+  };
+  return categoryMapping[categoryCode] || categoryCode;
+}
+
+function formatRupiah(number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0, // tanpa desimal
+  }).format(number);
+}
+
+// Create product card element
+function buildProductCardElement(productItem) {
+  const articleElement = document.createElement('article');
+  articleElement.className = 'bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-300 overflow-hidden flex flex-col h-full';
+
+  const detailLink = `{% url 'main:show_product' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', productItem.id);
+  const editLink = `{% url 'main:edit_product' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', productItem.id);
+  const deleteLink = `{% url 'main:delete_product' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', productItem.id);
+
+  const categoryLabel = getReadableCategoryName(productItem.category);
+  const isFeatured = productItem.is_featured;
+
+  const thumbnailHtml = productItem.thumbnail 
+    ? `<img src='${productItem.thumbnail}' alt='${productItem.name}' class='w-full h-full object-cover'>` 
+    : `<div class='w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center'></div>`;
+
+  const featuredBadge = isFeatured 
+    ? `<span class='inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800'>Featured</span>` 
+    : '';
+
+  const editDeleteButtons = CURRENT_USER_ID && Number(CURRENT_USER_ID) === Number(productItem.user_id)
+    ? `<a href="${detailLink}" class="text-[#590202] hover:text-[#8D0A0A] font-medium text-sm transition-colors">Read more</a>
+    <div class='flex space-x-2'>
+        <a href='${editLink}' class='text-gray-600 hover:text-gray-700 text-sm transition-colors'>Edit</a>
+        <a href="#" onclick="openDeleteModal('${deleteLink}')" class='text-red-600 hover:text-red-700 text-sm transition-colors'>Delete</a>
+      </div>`
+    : `<a href='${detailLink}' class="bg-white text-gray-700 border border-gray-300 px-20 py-1.5 rounded-md font-medium hover:bg-[#8D0A0A] hover:text-white transition-colors">
+          Buy
+        </a>`;
+
+  const completeCardHtml = `
+    <div class="aspect-[16/9] relative overflow-hidden">
+      ${thumbnailHtml}
+      <div class="absolute top-3 left-3">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#590202] text-white">${categoryLabel}</span>
+      </div>
+      <div class="absolute top-3 right-3 flex space-x-2">
+        ${featuredBadge}
+      </div>
+    </div>
+    <div class="p-5">
+      <h3 class="text-lg text-gray-900 line-clamp-2 leading-tight">
+        <a href="${detailLink}" class="hover:text-[#590202] transition-colors">${productItem.name}</a>
+      </h3>
+      <h3 class="text-2xl font-semibold text-gray-900 line-clamp-2 leading-tight mb-5">
+        ${ formatRupiah(productItem.price) }
+    </h3>
+      <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+        ${editDeleteButtons}
+      </div>
+    </div>
+  `;
+
+  articleElement.innerHTML = completeCardHtml;
+  return articleElement;
+}
+
+// Render all product cards
+function renderAllProductCards(productItems) {
+  productGridContainer.innerHTML = '';
+  productItems.forEach(productItem => {
+    const cardElement = buildProductCardElement(productItem);
+    productGridContainer.appendChild(cardElement);
+  });
+}
+
+// Filter and display product
+function filterAndDisplayProduct() {
+  updateFilterButtonsAppearance();
+  
+  const filteredProduct = activeFilter === 'all' 
+    ? allProductData 
+    : allProductData.filter(product => Number(product.user_id) === Number(CURRENT_USER_ID));
+  
+  if (filteredProduct.length === 0) {
+    displayPageSection({ showEmpty: true });
+  } else {
+    renderAllProductCards(filteredProduct);
+    displayPageSection({ showGrid: true });
+  }
+}
+
+// Fetch product data from server
+async function fetchProductFromServer() {
+  try {
+    displayPageSection({ showLoading: true });
+    
+    const response = await fetch(PRODUCT_API_ENDPOINT, {
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch product data from server');
+    }
+
+    const productData = await response.json();
+    allProductData = productData || [];
+    
+    filterAndDisplayProduct();
+  } catch (error) {
+    console.error('Error loading product:', error);
+    displayPageSection({ showError: true });
+  }
+}
+
+// Event handlers
+function handleShowAllProductClick() {
+  activeFilter = 'all';
+  filterAndDisplayProduct();
+}
+
+function handleShowMyProductClick() {
+  activeFilter = 'my';
+  filterAndDisplayProduct();
+}
+
+// Initialize page
+function initializeProductPage() {
+  showAllProductButton.addEventListener('click', handleShowAllProductClick);
+  showMyProductButton.addEventListener('click', handleShowMyProductClick);
+  
+  fetchProductFromServer();
+}
+
+function refreshProducts() {
+  fetchProductFromServer();
+}
+
+// Start application
+initializeProductPage();
+
+document.addEventListener('productAdded', function() {
+    // Refresh data without page reload
+    fetchProductFromServer();
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("updated") === "success") {
+    showToast("Product updated successfully!", "", "success");
+  }
+  if (params.get("login") === "success") {
+    showToast("Login success!", "", "success");
+  }
+
+  const newUrl = window.location.pathname + window.location.hash;
+  window.history.replaceState({}, document.title, newUrl);
+});
+</script>
 {% endblock content %}

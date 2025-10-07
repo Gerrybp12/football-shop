@@ -39,7 +39,7 @@
         </div>
       {% endif %}
 
-      <form method="POST" action="" class="space-y-5">
+      <form method="POST" class="space-y-5">
         {% csrf_token %}
         
         <div>
@@ -77,7 +77,7 @@
 
         <button 
           type="submit" 
-          class="w-full bg-green-600 text-white font-medium py-3 px-4 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200">
+          class="w-full bg-[#590202] text-white font-medium py-3 px-4 rounded hover:bg-[#8D0A0A] focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200">
           Create Account
         </button>
       </form>
@@ -106,7 +106,7 @@
       <div class="mt-6 text-center">
         <p class="text-gray-500 text-sm">
           Already have an account? 
-          <a href="{% url 'main:login' %}" class="text-green-600 hover:text-green-700 font-medium">
+          <a href="{% url 'main:login' %}" class="text-[#590202] hover:text-[#8D0A0A] font-medium">
             Sign In
           </a>
         </p>
@@ -115,4 +115,68 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.querySelector("form");
+  const button = form.querySelector("button[type='submit']");
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+
+    button.disabled = true;
+    button.innerText = "Creating...";
+
+    try {
+      const response = await fetch("", {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log("Register response:", data);
+
+      if (data.status === "success") {
+        const redirectUrl = data.redirect_url || "{% url 'main:show_main' %}?register=success";
+        window.location.href = redirectUrl;
+      } else if (data.status === "error") {
+        showErrors(data.errors);
+      }
+    } catch (error) {
+      console.error("AJAX Error:", error);
+      showToast("Terjadi kesalahan. Coba lagi nanti.", "", "error");
+    } finally {
+      button.disabled = false;
+      button.innerText = "Create Account";
+    }
+  });
+
+  function showErrors(errors) {
+    const old = document.getElementById("ajax-errors");
+    if (old) old.remove();
+
+    const errorBox = document.createElement("div");
+    errorBox.id = "ajax-errors";
+    errorBox.className =
+      "mt-4 px-4 py-3 rounded-md text-sm bg-red-50 border border-red-200 text-red-700";
+
+    errorBox.innerHTML = `
+      <strong>Registration Failed:</strong><br>
+      ${Object.entries(errors)
+        .map(([field, msgs]) =>
+          msgs.map(msg => `${field}: ${msg.message}`).join("<br>")
+        )
+        .join("<br>")}
+    `;
+
+    form.insertAdjacentElement("beforebegin", errorBox);
+  }
+});
+</script>
 {% endblock content %}
